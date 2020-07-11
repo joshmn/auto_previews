@@ -8,15 +8,16 @@ module AutoPreviews
 
     module ClassMethods
       def previews_for(options = {})
-        @_autopreview_config = _normalized_previews_for_options(options)
+        autopreview_configs << _normalized_previews_for_options(options)
       end
 
-      def autopreview_config
-        @_autopreview_config ||= {}
+      def autopreview_configs
+        @_autopreview_configs ||= []
       end
 
       private
 
+      # todo
       def _normalized_previews_for_options(options)
         options
       end

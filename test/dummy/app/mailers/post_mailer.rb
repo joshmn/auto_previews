@@ -1,8 +1,14 @@
 class PostMailer < ApplicationMailer
   previews_for model: 'Post',
-               params: { post_id: :id }
+               params: { post_id: :id },
+               only: [:created]
 
-  before_action do
+  previews_for model: 'Post',
+               params: { post_id: :id },
+               only: [:deleted],
+               using: :arguments
+
+  before_action only: [:created] do
     @post = Post.find_by(id: params[:post_id])
   end
 
@@ -10,7 +16,8 @@ class PostMailer < ApplicationMailer
     mail(to: "joshmn@example.com", subject: "Nice post #{@post.id}")
   end
 
-  def deleted
+  def deleted(post_id)
+    @post = Post.find_by(id: post_id)
     mail(to: "joshmn@example.com", subject: "Deleted post #{@post.id}")
   end
 end

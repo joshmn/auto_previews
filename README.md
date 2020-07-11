@@ -7,22 +7,29 @@ I got tired of writing `ActionMailer::Preview` classes. So I let Ruby write it f
 In your mailer class, define some options:
 
 ```ruby
-class PostMailer < ApplicationMailer 
+class PostMailer < ApplicationMailer
   previews_for model: 'Post',
-               params: { post_id: :id }
-  
-  before_action do 
-    @post = Post.includes(:user).find(params[:post_id])
-  end
-  
-  def created 
-    mail(to: @post.user.email, subject: "New post created")
-  end 
+               params: { post_id: :id },
+               only: [:created]
 
-  def deleted  
-    mail(to: @post.user.email, subject: "Post #{@post.id} deleted.")
-  end 
-end 
+  previews_for model: 'Post',
+               params: { post_id: :id },
+               only: [:deleted],
+               using: :arguments
+
+  before_action only: [:created] do
+    @post = Post.find_by(id: params[:post_id])
+  end
+
+  def created
+    mail(to: "joshmn@example.com", subject: "Nice post #{@post.id}")
+  end
+
+  def deleted(post_id)
+    @post = Post.find_by(id: post_id)
+    mail(to: "joshmn@example.com", subject: "Deleted post #{@post.id}")
+  end
+end
 ```
 
 In your previewer class, just call `auto_preview!`
@@ -33,7 +40,7 @@ class PostMailerPreview < ActionMailer::Preview
 end 
 ```
 
-`auto_preview!` will do some lazy metaprogramming to create your mailer previews, like so:
+`auto_preview!` will do some metaprogramming to create your mailer previews, like so:
 
 ```ruby 
   post = Post.first 
@@ -66,9 +73,8 @@ $ bundle
 
 ## Roadmap 
 
-* Support argument mailers 
-* More options 
-* Better extensibility 
+* More option
+* Better extensibility
 * Better record lookup 
 * Better serialization of mailer params 
 
