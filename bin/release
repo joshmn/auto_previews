@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative '../lib/auto_previews/version'
+
+version = AutoPreviews::VERSION
+system("gem build auto_previews.gemspec")
+system("gem push auto_previews-#{version}.gem")
+system("rm auto_previews-#{version}.gem")
+system("git tag -a v#{version} -m 'version #{version}'")
+system("git push origin v#{version}")

@@ -18,24 +18,65 @@ module AutoPreviews
                                 mailer_class.instance_methods(false)
                               end
           methods_to_define.each do |m|
+            model = setup_model(autopreview_config[:model])
+            scoped_collection = setup_scope(model, autopreview_config)
+            finder = record_finder(scoped_collection, autopreview_config)
+            record_proc, preview_params = finder[0], finder[1]
             define_method(m) do
-              model = (autopreview_config[:model] || self.class.name.delete_suffix("MailerPreview")).constantize
-              _params = {}
-              autopreview_config[:params].each do |k,v|
-                record = model.first
-                if record.nil?
-                  raise ActiveRecord::RecordNotFound, "Cannot find a record. Should be a type of `#{model}`. Create one?"
-                end
-                _params[k] = record.public_send(v)
+              mailer_params = {}
+              record = record_proc.call
+              if record.nil?
+                raise ActiveRecord::RecordNotFound, "Cannot find a record. Should be a type of `#{model}`. Create one?"
+              end
+              preview_params.each do |k,v|
+                mailer_params[k] = record.public_send(v)
               end
               if autopreview_config[:using] == :arguments
-                mailer_class.public_send(m, _params.values)
+                mailer_class.public_send(m, *mailer_params.values)
               else
-                mailer_class.with(_params).public_send(m)
+                mailer_class.with(mailer_params).public_send(m)
               end
             end
           end
         end
+      end
+
+      private
+
+      def setup_model(model_class)
+        return false if model_class === false
+        model = model_class.safe_constantize || model_class.to_s.delete_suffix('MailerPreview').safe_constantize
+        if model.nil?
+          raise ArgumentError, "unable to infer model from `#{model_class}`."
+        end
+        model
+      end
+
+      def setup_scope(model, config)
+        return model if config[:model] === false
+        scope = config[:scope]
+        scoped_collection = model
+        if scope.is_a?(Proc)
+          scoped_collection = scoped_collection.call(scope)
+        elsif scope.is_a?(Symbol)
+          scoped_collection = scoped_collection.send(scope)
+        else
+          raise ArgumentError, "invalid scope for #{model} `#{scope.inspect}`"
+        end
+        scoped_collection
+      end
+
+      # I hate this. So hacky.
+      def record_finder(collection, config)
+        if config[:model] === false
+          struct = OpenStruct.new
+          config[:params].each do |k,v|
+            struct[k] = v
+            config[:params][k] = k
+          end
+          return [-> { struct }, config[:params]]
+        end
+        [-> { collection.first }, config[:params]]
       end
     end
   end
