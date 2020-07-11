@@ -94,9 +94,9 @@ Passing a proc will `call`; passing a symbol will call the given method on the m
 class OneOffMailer < ApplicationMailer 
   previews_for model: false,
                params: {
-                 subject: -> :random_subject,
+                 subject: "Hi",
                  body: -> { FFaker::CheesyLingo.paragraph },
-               },
+               }
 end 
 ```
 
