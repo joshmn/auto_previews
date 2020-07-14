@@ -57,7 +57,7 @@ module AutoPreviews
         scope = config[:scope]
         scoped_collection = model
         if scope.is_a?(Proc)
-          scoped_collection = scoped_collection.call(scope)
+          scoped_collection = scoped_collection.instance_exec(&scope)
         elsif scope.is_a?(Symbol)
           scoped_collection = scoped_collection.send(scope)
         else
